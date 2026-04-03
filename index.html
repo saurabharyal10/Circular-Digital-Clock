@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circular Digital Clock</title>
+    <style>
+        /* CSS resets and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #212121; /* Dark charcoal background from image */
+            color: #d0d0d0; /* General light text color */
+            font-family: 'Montserrat', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* A clean, modern font */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #clock-container {
+            width: 90vmin; /* Take up 90% of the viewport's smaller dimension */
+            height: 90vmin;
+            max-width: 600px;
+            max-height: 600px;
+            position: relative;
+            transform: scale(1); /* Ensure it doesn't get squished */
+        }
+
+        #clock-title {
+            position: absolute;
+            top: 5vmin; /* Position based on viewport size */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 4vmin; /* Scalable title font size */
+            text-transform: uppercase;
+            color: #a0a0a0;
+            white-space: nowrap;
+        }
+
+        /* The central clock and analog hands */
+        #central-clock {
+            width: 40vmin; /* Size of central area */
+            height: 40vmin;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #282828; /* Slightly lighter gray central dot area */
+            border-radius: 50%;
+            z-index: 10; /* Keeps hands and center point on top */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Wrapper that will be rotated, containing the actual visible line */
+        .hand-wrapper {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            /* Key from the image code: The rotation point is the bottom-center of the element */
+            transform-origin: center center;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end; /* Visible hand starts from center and goes up */
+            padding-bottom: 50%; /* Position the visible hand at the top half */
+        }
+
+        /* The visible part of the hands */
+        .hand {
+            background-color: white;
+            border-radius: 4px;
+            /* Create a pointed shape using border-radius, though simpler here */
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.4);
+            position: relative; /* So children (points) can be placed */
+        }
+
+        /* Hour hand style */
+        #hr-wrapper .hand {
+            width: 6px;
+            height: 60px;
+        }
+
+        /* Minute hand style */
+        #min-wrapper .hand {
+            width: 4px;
+            height: 90px;
+        }
+
+        /* Second hand style */
+        #sec-wrapper .hand {
+            width: 2px;
+            height: 110px;
+        }
+
+        /* A simple point for the hands for a better look */
+        .hand::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: calc(var(--width) / 2) solid transparent;
+            border-right: calc(var(--width) / 2) solid transparent;
+            border-bottom: 10px solid white;
+        }
+        
+        #hr-wrapper .hand::before { --width: 6px; border-bottom-color: white;}
+        #min-wrapper .hand::before { --width: 4px; border-bottom-color: white;}
+        #sec-wrapper .hand::before { --width: 2px; border-bottom-color: white;}
+
+
+        /* Center dot */
+        #center-dot {
+            width: 15px;
+            height: 15px;
+            background-color: white;
+            border-radius: 50%;
+            position: absolute;
+            z-index: 20; /* On top of everything */
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Concentric ring styles */
+        .ring-wrapper {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(0deg);
+            transform-origin: center center;
+            border-radius: 50%;
+            border: 2px solid #333; /* Faint gray border for rings */
+            transition: transform 0.5s ease-out; /* Smooth rotation for entire ring */
+        }
+
+        /* Diameter of each ring (based on viewport size to scale) */
+        #day-ring-wrapper { width: 55vmin; height: 55vmin; z-index: 5; }
+        #month-ring-wrapper { width: 70vmin; height: 70vmin; z-index: 3; }
+        #date-ring-wrapper { width: 85vmin; height: 85vmin; z-index: 1; }
+
+        /* General styles for text segments on the rings */
+        .ring-item {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #555; /* Default dim gray color */
+            font-size: 3vmin;
+            font-weight: 500;
+            text-transform: uppercase;
+            transform-origin: center bottom; /* Key for positioning text in circle */
+            height: 50%; /* Takes up half the circle height, placing text on top edge */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Place text at the very top of the segment */
+            transition: color 0.3s ease;
+        }
+
+        /* Specific color highlights from image */
+        #day-ring-wrapper .ring-item.active { color: #50e3c2; } /* Mint green for day (SUN) */
+        #month-ring-wrapper .ring-item.active { color: #4a90e2; } /* Blue for month (FEB) */
+        #date-ring-wrapper .ring-item.active { color: #e74c3c; } /* Red for date (15) */
+
+        /* Responsive adjustments for text size if necessary */
+        @media (max-width: 600px) {
+            .ring-item { font-size: 4vmin; }
+            #clock-title { font-size: 5vmin; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="clock-container">
+        <h1 id="clock-title">CIRCULAR DIGITAL CLOCK</h1>
+
+        <div id="central-clock">
+            <div id="center-dot"></div>
+            <div class="hand-wrapper" id="hr-wrapper"><div class="hand"></div></div>
+            <div class="hand-wrapper" id="min-wrapper"><div class="hand"></div></div>
+            <div class="hand-wrapper" id="sec-wrapper"><div class="hand"></div></div>
+        </div>
+
+        <div class="ring-wrapper" id="day-ring-wrapper"></div>
+        <div class="ring-wrapper" id="month-ring-wrapper"></div>
+        <div class="ring-wrapper" id="date-ring-wrapper"></div>
+
+    </div>
+
+    <script>
+        // Data for rings
+        const DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+        const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        const DATES = Array.from({length: 31}, (_, i) => String(i + 1).padStart(2, '0')); // Generates 01 to 31
+
+        // Function to create text elements around a ring
+        function createRingElements(wrapperId, array) {
+            const wrapper = document.getElementById(wrapperId);
+            const count = array.length;
+            const angleStep = 360 / count;
+
+            array.forEach((text, index) => {
+                const span = document.createElement('span');
+                span.classList.add('ring-item');
+                span.innerText = text;
+                span.id = `${wrapperId}-item-${index}`; // Unique ID for later access
+                // Position each element by rotating it
+                span.style.transform = `translateX(-50%) rotate(${index * angleStep}deg)`;
+                wrapper.appendChild(span);
+            });
+        }
+
+        // --- Main Clock Function based on the image's code snippet structure ---
+        function animateClock() {
+            // Function to run every second
+            function updateClock() {
+                const now = new Date();
+                const secs = now.getSeconds();
+                const mins = now.getMinutes();
+                const hrs = now.getHours();
+
+                // 1. Calculate Analog Hand Angles (Exactly as in the image code snippet)
+                // 360 degrees / 60 seconds = 6 degrees per second
+                const secAngle = secs * 6;
+                // 360 degrees / 60 minutes = 6 degrees per minute
+                const minAngle = mins * 6;
+                // 360 degrees / 12 hours = 30 degrees per hour, + angle based on minutes
+                const hrAngle = hrs * 30 + mins / 2;
+
+                // 2. Apply rotation to standard hand wrappers (from image snippet)
+                const secWrapper = document.getElementById("sec-wrapper");
+                const minWrapper = document.getElementById("min-wrapper");
+                const hrWrapper = document.getElementById("hr-wrapper");
+
+                // Standard transform for broad support
+                secWrapper.style.transform = "rotate(" + secAngle + "deg)";
+                minWrapper.style.transform = "rotate(" + minAngle + "deg)";
+                hrWrapper.style.transform = "rotate(" + hrAngle + "deg)";
+                
+                // Keep webkit transform from original snippet for completeness/legacy support
+                secWrapper.style.webkitTransform = "rotate(" + secAngle + "deg)";
+                minWrapper.style.webkitTransform = "rotate(" + minAngle + "deg)";
+                hrWrapper.style.webkitTransform = "rotate(" + hrAngle + "deg)";
+
+
+                // --- CUSTOM CODE TO HANDLE CIRCULAR RINGS & DYNAMIC ALIGNMENT ---
+
+                // 3. Get current day, month, date indices
+                const currentDayIndex = now.getDay(); // 0 (SUN) to 6 (SAT)
+                const currentMonthIndex = now.getMonth(); // 0 (JAN) to 11 (DEC)
+                const currentDate = now.getDate(); // 1 to 31
+                const currentDateIndex = currentDate - 1; // 0 to 30 for array index
+
+
+                // 4. Function to update highlights on a single ring
+                function updateRingHighlight(wrapperId, currentIndex) {
+                    const wrapper = document.getElementById(wrapperId);
+                    
+                    // Remove current active class from all items in this ring
+                    const activeItems = wrapper.querySelectorAll('.ring-item.active');
+                    activeItems.forEach(item => item.classList.remove('active'));
+
+                    // Add active class to the correct element
+                    const activeItem = document.getElementById(`${wrapperId}-item-${currentIndex}`);
+                    if (activeItem) {
+                        activeItem.classList.add('active');
+                    }
+                }
+
+                // 5. Update highlights for all three rings
+                updateRingHighlight("day-ring-wrapper", currentDayIndex);
+                updateRingHighlight("month-ring-wrapper", currentMonthIndex);
+                updateRingHighlight("date-ring-wrapper", currentDateIndex);
+
+
+                // 6. --- Rotate the entire ring to make the active element appear at the top-center position ---
+                // For a ring with N items, element i is at 'i * (360/N)deg'. 
+                // To rotate the parent ring so element i is at 0deg (top), rotate parent by -'i * (360/N)deg'.
+
+                function rotateRingToTop(wrapperId, currentIndex, totalItems) {
+                    const wrapper = document.getElementById(wrapperId);
+                    const angleStep = 360 / totalItems;
+                    // Rotate the entire ring wrapper counter-clockwise by its angle step
+                    wrapper.style.transform = `translate(-50%, -50%) rotate(${-currentIndex * angleStep}deg)`;
+                }
+
+                rotateRingToTop("day-ring-wrapper", currentDayIndex, DAYS.length);
+                rotateRingToTop("month-ring-wrapper", currentMonthIndex, MONTHS.length);
+                rotateRingToTop("date-ring-wrapper", currentDateIndex, DATES.length);
+
+            }
+
+            // --- Initialize rings once ---
+            createRingElements("day-ring-wrapper", DAYS);
+            createRingElements("month-ring-wrapper", MONTHS);
+            createRingElements("date-ring-wrapper", DATES);
+
+            // --- Run main logic immediately, then set the interval from the image code ---
+            updateClock(); 
+            // set interval to run updateClock every second (from image snippet: }, 1000); )
+            setInterval(updateClock, 1000);
+        }
+
+        // --- Execute the function on page load ---
+        window.addEventListener('load', animateClock);
+
+    </script>
+</body>
+</html>
