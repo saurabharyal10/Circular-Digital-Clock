@@ -63,5 +63,5 @@ No installs, build steps, or server setup required.
 Full Stack Developer & Data Analyst
 
 - GitHub: [github.com/saurabharyal10](https://github.com/saurabharyal10)
-- LinkedIn: [your LinkedIn URL here]
+- LinkedIn: [[LinkedIn](https://www.linkedin.com/in/saurabh-aryal-0b4b80209/)]
 - Portfolio: [saurabh-aryal.com.np](https://saurabh-aryal.com.np)
